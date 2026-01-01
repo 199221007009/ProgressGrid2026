@@ -1,0 +1,2710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Productivity Dashboard 2026</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Add this to your HTML <head> section -->
+<!-- Remove duplicates and add 512px icon -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3b82f6">
+
+<!-- Modern browsers -->
+<link rel="icon" href="icon-192.png" sizes="192x192">
+<link rel="icon" href="icon-512.png" sizes="512x512">
+
+<!-- iOS support -->
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+
+<meta name="apple-mobile-web-app-status-bar" content="#3b82f6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ProgressGrid">
+
+<!-- Service Worker Registration -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(registration => {
+        console.log('ServiceWorker registered');
+      })
+      .catch(err => {
+        console.log('ServiceWorker registration failed: ', err);
+      });
+  });
+}
+</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --secondary-color: #1e40af;
+            --success-color: #16a34a;
+            --danger-color: #dc2626;
+            --warning-color: #f59e0b;
+            --light-color: #f8fafc;
+            --dark-color: #1e293b;
+            --gray-color: #64748b;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            color: var(--dark-color);
+            line-height: 1.6;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 30px;
+            box-shadow: var(--box-shadow);
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .year-badge {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        /* Navigation Tabs */
+        .tabs {
+            display: flex;
+            background-color: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            margin-bottom: 30px;
+            box-shadow: var(--box-shadow);
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab:hover {
+            background-color: #f1f5f9;
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            background-color: #f0f7ff;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Dashboard Styles */
+        .today-section {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--box-shadow);
+        }
+
+        .today-section h2 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .current-date {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--dark-color);
+        }
+
+        .current-weekday {
+            font-size: 1.2rem;
+            color: var(--gray-color);
+            margin-left: 10px;
+        }
+
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+        }
+
+        .card h3 {
+            margin-bottom: 15px;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            background-color: var(--primary-color);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-container {
+            margin-bottom: 10px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .progress-bar {
+            height: 20px;
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--success-color);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-percentage {
+            font-weight: 700;
+            font-size: 1.2rem;
+            text-align: center;
+            margin-top: 10px;
+            color: var(--dark-color);
+        }
+
+        .week-overview {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            margin-bottom: 30px;
+        }
+
+        .week-overview h3 {
+            color: var(--dark-color);
+            margin-bottom: 15px;
+        }
+
+        .week-range {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            padding: 10px;
+            background-color: #f0f7ff;
+            border-radius: var(--border-radius);
+            text-align: center;
+        }
+
+        .month-summary {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+        }
+
+        .month-summary h3 {
+            color: var(--dark-color);
+            margin-bottom: 15px;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .summary-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .summary-label {
+            color: var(--gray-color);
+            font-size: 1rem;
+        }
+
+        /* Planner Table Styles */
+        .planner-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .month-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background-color: white;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .month-selector button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .month-selector button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .current-month {
+            font-size: 1.3rem;
+            font-weight: 600;
+            min-width: 180px;
+            text-align: center;
+        }
+
+        .page-selector {
+            display: flex;
+            gap: 10px;
+        }
+
+        .page-btn {
+            padding: 8px 16px;
+            background-color: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .page-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .page-btn:hover:not(.active) {
+            background-color: #f0f7ff;
+        }
+
+        .planner-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #15803d;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #b91c1c;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #d97706;
+        }
+
+        .unsaved-changes {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .table-container {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+
+        .planner-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        .planner-table th {
+            background-color: #f8fafc;
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--dark-color);
+            border-bottom: 2px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            vertical-align: middle;
+        }
+
+        .planner-table th div {
+            min-height: 40px;
+        }
+
+        .planner-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            transition: var(--transition);
+        }
+
+        .task-name, .task-time {
+            border-right: 1px solid #e2e8f0;
+        }
+
+        .task-name input, .task-time input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .task-name input:focus, .task-time input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .day-cell {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: var(--transition);
+            position: relative;
+            background-color: white;
+            border: 1px solid #e2e8f0;
+        }
+
+        .day-cell:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+            z-index: 2;
+        }
+
+        .day-cell.empty {
+            background-color: white;
+            color: #94a3b8;
+        }
+
+        .day-cell.done {
+            background-color: var(--success-color);
+            color: white;
+            font-weight: 600;
+            border-color: var(--success-color);
+        }
+
+        .day-cell.not-done {
+            background-color: var(--danger-color);
+            color: white;
+            font-weight: 600;
+            border-color: var(--danger-color);
+        }
+
+        .day-cell.today {
+            box-shadow: 0 0 0 3px var(--warning-color);
+            z-index: 1;
+        }
+
+        .day-cell.empty.today {
+            background-color: #fffbeb;
+            border-color: var(--warning-color);
+        }
+
+        .day-cell.future-day {
+            opacity: 0.7;
+        }
+
+        .day-cell.past-day {
+            opacity: 0.9;
+        }
+
+        .delete-task {
+            color: var(--danger-color);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: var(--transition);
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .delete-task:hover {
+            background-color: #fef2f2;
+        }
+
+        .tooltip {
+            position: absolute;
+            background-color: var(--dark-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            z-index: 100;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+        }
+
+        .day-cell:hover .tooltip {
+            display: block;
+        }
+
+        /* Status indicator in cells */
+        .status-indicator {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        /* Legend for cell status */
+        .status-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8fafc;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .legend-color.empty {
+            background-color: white;
+        }
+
+        .legend-color.done {
+            background-color: var(--success-color);
+        }
+
+        .legend-color.not-done {
+            background-color: var(--danger-color);
+        }
+
+        .legend-color.today {
+            box-shadow: 0 0 0 2px var(--warning-color);
+        }
+
+        /* History View Styles */
+        .history-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .history-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background-color: white;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .history-view-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .view-btn {
+            padding: 8px 16px;
+            background-color: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .view-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .history-container {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            overflow-x: auto;
+        }
+
+        .daily-history {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .history-day {
+            border: 1px solid #e2e8f0;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .history-day:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-day-header {
+            background-color: #f8fafc;
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+        }
+
+        .history-date-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .history-date {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+        }
+
+        .history-weekday {
+            color: var(--gray-color);
+            font-size: 0.9rem;
+            background-color: #e2e8f0;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .history-day-content {
+            padding: 15px;
+        }
+
+        .history-task {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .history-task:last-child {
+            border-bottom: none;
+        }
+
+        .history-task-name {
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .history-task-time {
+            color: var(--gray-color);
+            font-size: 0.9rem;
+            margin-right: 10px;
+        }
+
+        .history-task-status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .status-empty {
+            background-color: #f1f5f9;
+            color: var(--gray-color);
+        }
+
+        .status-done {
+            background-color: #dcfce7;
+            color: var(--success-color);
+        }
+
+        .status-not-done {
+            background-color: #fee2e2;
+            color: var(--danger-color);
+        }
+
+        /* Settings Styles */
+        .settings-container {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+        }
+
+        .setting-group {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .setting-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .setting-group h3 {
+            margin-bottom: 15px;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .setting-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: #f8fafc;
+            border-radius: var(--border-radius);
+        }
+
+        .setting-option:last-child {
+            margin-bottom: 0;
+        }
+
+        .setting-label {
+            font-weight: 500;
+        }
+
+        .setting-control select {
+            padding: 8px 15px;
+            border-radius: var(--border-radius);
+            border: 1px solid #cbd5e1;
+            background-color: white;
+            font-size: 1rem;
+            color: var(--dark-color);
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: var(--transition);
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: var(--transition);
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+
+        /* Save Progress Button */
+        .save-progress-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .save-progress-btn {
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .last-saved {
+            text-align: center;
+            color: var(--gray-color);
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #cbd5e1;
+            color: var(--gray-color);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .dashboard-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .planner-controls, .history-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .month-selector, .history-selector {
+                justify-content: center;
+            }
+            
+            .planner-actions {
+                justify-content: center;
+            }
+            
+            .summary-stats {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .setting-option {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .setting-control {
+                width: 100%;
+            }
+            
+            .toggle-switch {
+                align-self: flex-start;
+            }
+            
+            .daily-history {
+                grid-template-columns: 1fr;
+            }
+            
+            .history-date-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .history-weekday {
+                align-self: flex-start;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                border-bottom: none;
+                border-right: 3px solid transparent;
+            }
+            
+            .tab.active {
+                border-right-color: var(--primary-color);
+                border-bottom: none;
+            }
+            
+            .page-selector, .history-view-selector {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .current-month {
+                font-size: 1.1rem;
+            }
+            
+            .planner-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            color: white;
+            font-weight: 500;
+            box-shadow: var(--box-shadow);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background-color: var(--success-color);
+        }
+
+        .notification.error {
+            background-color: var(--danger-color);
+        }
+
+        .notification.info {
+            background-color: var(--primary-color);
+        }
+
+        .notification.warning {
+            background-color: var(--warning-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-chart-line"></i> Offline Productivity Dashboard <span class="year-badge">2026</span></h1>
+            <p>Track your tasks, progress, and history - completely offline with local data storage</p>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="dashboard">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </div>
+            <div class="tab" data-tab="planner">
+                <i class="fas fa-calendar-alt"></i> Planner
+            </div>
+            <div class="tab" data-tab="history">
+                <i class="fas fa-history"></i> History
+            </div>
+            <div class="tab" data-tab="settings">
+                <i class="fas fa-cog"></i> Settings
+            </div>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="today-section">
+                <h2><i class="far fa-calendar-check"></i> Today</h2>
+                <div class="current-date">
+                    <span id="current-date">Loading...</span>
+                    <span class="current-weekday" id="current-weekday"></span>
+                </div>
+                <div class="last-saved" id="dashboard-last-saved"></div>
+            </div>
+
+            <div class="dashboard-cards">
+                <div class="card">
+                    <h3><span class="card-icon"><i class="fas fa-sun"></i></span> Daily Progress</h3>
+                    <div class="progress-container">
+                        <div class="progress-label">
+                            <span>Tasks Completed</span>
+                            <span id="daily-count">0/0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="daily-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="progress-percentage" id="daily-percentage">0%</div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="card-icon"><i class="fas fa-calendar-week"></i></span> Weekly Progress</h3>
+                    <div class="progress-container">
+                        <div class="progress-label">
+                            <span>Tasks Completed</span>
+                            <span id="weekly-count">0/0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="weekly-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="progress-percentage" id="weekly-percentage">0%</div>
+                </div>
+
+                <div class="card">
+                    <h3><span class="card-icon"><i class="fas fa-calendar"></i></span> Monthly Progress</h3>
+                    <div class="progress-container">
+                        <div class="progress-label">
+                            <span>Tasks Completed</span>
+                            <span id="monthly-count">0/0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="monthly-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="progress-percentage" id="monthly-percentage">0%</div>
+                </div>
+            </div>
+
+            <div class="week-overview">
+                <h3><i class="fas fa-chart-bar"></i> Week Overview</h3>
+                <div class="week-range" id="week-range">Loading week range...</div>
+            </div>
+
+            <div class="month-summary">
+                <h3><i class="fas fa-chart-pie"></i> Month Summary</h3>
+                <div class="summary-stats">
+                    <div>
+                        <div class="summary-number" id="month-total">0</div>
+                        <div class="summary-label">Total Tasks Completed</div>
+                    </div>
+                    <div>
+                        <div class="summary-number" id="month-avg">0%</div>
+                        <div class="summary-label">Average Daily Completion</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Planner Tab -->
+        <div id="planner" class="tab-content">
+            <div class="planner-controls">
+                <div class="month-selector">
+                    <button id="prev-month"><i class="fas fa-chevron-left"></i></button>
+                    <div class="current-month" id="current-month">January 2026</div>
+                    <button id="next-month"><i class="fas fa-chevron-right"></i></button>
+                </div>
+
+                <div class="page-selector">
+                    <button class="page-btn active" data-page="1">Days 1-15</button>
+                    <button class="page-btn" data-page="2">Days 16-31</button>
+                </div>
+
+                <div class="planner-actions">
+                    <button class="btn btn-primary" id="add-task">
+                        <i class="fas fa-plus"></i> Add Task
+                    </button>
+                    <button class="btn btn-success" id="save-progress-btn">
+                        <i class="fas fa-save"></i> Save Progress
+                    </button>
+                    <button class="btn btn-warning" id="export-data">
+                        <i class="fas fa-file-export"></i> Export Month
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="planner-table" id="planner-table">
+                    <thead>
+                        <tr>
+                            <th>Task Name</th>
+                            <th>Time</th>
+                            <!-- Day cells will be dynamically added here -->
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Task rows will be dynamically added here -->
+                    </tbody>
+                </table>
+                
+                <!-- Status Legend -->
+                <div class="status-legend">
+                    <div class="legend-item">
+                        <div class="legend-color empty"></div>
+                        <span>Not Set</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color done"></div>
+                        <span>Done</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color not-done"></div>
+                        <span>Not Done</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color today empty"></div>
+                        <span>Today</span>
+                    </div>
+                </div>
+                
+                <!-- Save Progress Button -->
+                <div class="save-progress-container">
+                    <button class="btn btn-success save-progress-btn" id="save-progress-bottom">
+                        <i class="fas fa-save"></i> Save All Changes
+                    </button>
+                </div>
+                
+                <div class="last-saved" id="planner-last-saved"></div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="history" class="tab-content">
+            <div class="history-controls">
+                <div class="history-selector">
+                    <label for="history-month">Select Month:</label>
+                    <select id="history-month">
+                        <!-- Month options will be dynamically added -->
+                    </select>
+                </div>
+
+                <div class="history-view-selector">
+                    <button class="view-btn active" data-view="daily">Daily View</button>
+                    <button class="view-btn" data-view="weekly">Weekly View</button>
+                    <button class="view-btn" data-view="monthly">Monthly Summary</button>
+                </div>
+            </div>
+
+            <div class="history-container" id="history-container">
+                <!-- History content will be dynamically added here -->
+            </div>
+            
+            <div class="last-saved" id="history-last-saved"></div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="settings-container">
+                <div class="setting-group">
+                    <h3><i class="fas fa-calendar-week"></i> Week Settings</h3>
+                    <div class="setting-option">
+                        <div class="setting-label">Week Starts On</div>
+                        <div class="setting-control">
+                            <select id="week-start">
+                                <option value="0">Sunday</option>
+                                <option value="1">Monday</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3><i class="fas fa-desktop"></i> Display Settings</h3>
+                    <div class="setting-option">
+                        <div class="setting-label">Default View on Load</div>
+                        <div class="setting-control">
+                            <select id="default-view">
+                                <option value="dashboard">Dashboard</option>
+                                <option value="planner">Planner</option>
+                                <option value="history">History</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="setting-option">
+                        <div class="setting-label">Auto-save Changes</div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="auto-save">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3><i class="fas fa-database"></i> Data Management</h3>
+                    <div class="setting-option">
+                        <div class="setting-label">Clear All Data</div>
+                        <div class="setting-control">
+                            <button class="btn btn-danger" id="clear-data">
+                                <i class="fas fa-trash-alt"></i> Clear All Data
+                            </button>
+                        </div>
+                    </div>
+                    <div class="setting-option">
+                        <div class="setting-label">Export All Data (JSON)</div>
+                        <div class="setting-control">
+                            <button class="btn btn-primary" id="export-all">
+                                <i class="fas fa-file-download"></i> Export All Data
+                            </button>
+                        </div>
+                    </div>
+                    <div class="setting-option">
+                        <div class="setting-label">Last Saved</div>
+                        <div class="setting-control" id="settings-last-saved">
+                            Never
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <h3><i class="fas fa-info-circle"></i> About</h3>
+                    <p>This is a fully offline productivity dashboard for 2026. All data is stored locally in your browser using localStorage. No data is sent to any server.</p>
+                    <p>Features include task tracking, progress monitoring, history review, and data export capabilities.</p>
+                    <p><strong>Note:</strong> Use the "Save Progress" button to save your changes. Auto-save can be enabled in settings.</p>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Offline Productivity Dashboard 2026 • Data is stored locally in your browser • No internet connection required</p>
+        </footer>
+    </div>
+
+    <!-- Notification Element -->
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="notification-text">Notification message</span>
+    </div>
+
+    <script>
+        // Main Application Object
+        const ProductivityDashboard = {
+            // State variables
+            currentMonth: new Date().getMonth(),
+            currentYear: 2026,
+            currentPage: 1,
+            tasks: {},
+            settings: {
+                weekStart: 0, // 0 = Sunday, 1 = Monday
+                defaultView: 'dashboard',
+                autoSave: false
+            },
+            monthNames: [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ],
+            dayNames: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+            unsavedChanges: false,
+            lastSavedTime: null,
+            
+            // Initialize the application
+            init: function() {
+                this.loadSettings();
+                this.loadTasks();
+                this.loadLastSavedTime();
+                this.setupEventListeners();
+                this.updateDashboard();
+                this.renderPlanner();
+                this.renderHistoryMonthOptions();
+                this.showDefaultView();
+                this.showNotification('Productivity Dashboard loaded successfully!', 'success');
+                
+                // Check for unsaved changes warning
+                this.checkUnsavedChanges();
+            },
+            
+            // Load settings from localStorage
+            loadSettings: function() {
+                const savedSettings = localStorage.getItem('productivityDashboardSettings');
+                if (savedSettings) {
+                    this.settings = JSON.parse(savedSettings);
+                    
+                    // Update UI elements with saved settings
+                    document.getElementById('week-start').value = this.settings.weekStart;
+                    document.getElementById('default-view').value = this.settings.defaultView;
+                    document.getElementById('auto-save').checked = this.settings.autoSave || false;
+                }
+            },
+            
+            // Save settings to localStorage
+            saveSettings: function() {
+                localStorage.setItem('productivityDashboardSettings', JSON.stringify(this.settings));
+            },
+            
+            // Load tasks from localStorage
+            loadTasks: function() {
+                const savedTasks = localStorage.getItem('productivityDashboardTasks2026');
+                if (savedTasks) {
+                    this.tasks = JSON.parse(savedTasks);
+                } else {
+                    // Initialize with sample tasks for 2026
+                    this.initializeSampleData();
+                }
+            },
+            
+            // Save tasks to localStorage
+            saveTasks: function() {
+                localStorage.setItem('productivityDashboardTasks2026', JSON.stringify(this.tasks));
+                this.unsavedChanges = false;
+                this.updateLastSavedTime();
+                this.updateSaveButtonStates();
+            },
+            
+            // Load last saved time
+            loadLastSavedTime: function() {
+                const savedTime = localStorage.getItem('productivityDashboardLastSaved');
+                if (savedTime) {
+                    this.lastSavedTime = new Date(savedTime);
+                    this.updateLastSavedDisplay();
+                }
+            },
+            
+            // Update last saved time
+            updateLastSavedTime: function() {
+                this.lastSavedTime = new Date();
+                localStorage.setItem('productivityDashboardLastSaved', this.lastSavedTime.toISOString());
+                this.updateLastSavedDisplay();
+            },
+            
+            // Update last saved display in all tabs
+            updateLastSavedDisplay: function() {
+                if (this.lastSavedTime) {
+                    const timeStr = this.lastSavedTime.toLocaleString();
+                    const relativeTime = this.getRelativeTimeString(this.lastSavedTime);
+                    
+                    // Update all last saved displays
+                    document.getElementById('dashboard-last-saved').textContent = `Last saved: ${relativeTime}`;
+                    document.getElementById('planner-last-saved').textContent = `Last saved: ${relativeTime}`;
+                    document.getElementById('history-last-saved').textContent = `Last saved: ${relativeTime}`;
+                    document.getElementById('settings-last-saved').textContent = relativeTime;
+                } else {
+                    document.getElementById('dashboard-last-saved').textContent = 'Never saved';
+                    document.getElementById('planner-last-saved').textContent = 'Never saved';
+                    document.getElementById('history-last-saved').textContent = 'Never saved';
+                    document.getElementById('settings-last-saved').textContent = 'Never';
+                }
+            },
+            
+            // Get relative time string (e.g., "5 minutes ago")
+            getRelativeTimeString: function(date) {
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMins = Math.round(diffMs / 60000);
+                const diffHours = Math.round(diffMs / 3600000);
+                const diffDays = Math.round(diffMs / 86400000);
+                
+                if (diffMins < 1) {
+                    return 'Just now';
+                } else if (diffMins < 60) {
+                    return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
+                } else if (diffHours < 24) {
+                    return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+                } else if (diffDays < 7) {
+                    return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+                } else {
+                    return date.toLocaleDateString();
+                }
+            },
+            
+            // Initialize sample data for 2026
+            initializeSampleData: function() {
+                // Create a sample task structure for each month
+                for (let month = 0; month < 12; month++) {
+                    const monthKey = `${month}-2026`;
+                    this.tasks[monthKey] = [];
+                    
+                    // Add some sample tasks for each month
+                    const sampleTasks = [
+                        { id: this.generateId(), name: 'Morning Exercise', time: '07:00' },
+                        { id: this.generateId(), name: 'Daily Planning', time: '08:00' },
+                        { id: this.generateId(), name: 'Project Work', time: '10:00' },
+                        { id: this.generateId(), name: 'Lunch Break', time: '13:00' },
+                        { id: this.generateId(), name: 'Meetings', time: '15:00' },
+                        { id: this.generateId(), name: 'Email Review', time: '17:00' }
+                    ];
+                    
+                    // Initialize each task with empty status for each day of the month
+                    const daysInMonth = this.getDaysInMonth(month + 1, 2026);
+                    sampleTasks.forEach(task => {
+                        task.status = {};
+                        // Start with empty status (not set) instead of random values
+                        for (let day = 1; day <= daysInMonth; day++) {
+                            task.status[day] = 'empty'; // Empty by default
+                        }
+                        this.tasks[monthKey].push(task);
+                    });
+                }
+                
+                this.saveTasks();
+            },
+            
+            // Generate unique ID for tasks
+            generateId: function() {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2);
+            },
+            
+            // Get number of days in a month
+            getDaysInMonth: function(month, year) {
+                return new Date(year, month, 0).getDate();
+            },
+            
+            // Get day name for a specific date
+            getDayName: function(year, month, day) {
+                const date = new Date(year, month, day);
+                return this.dayNames[date.getDay()];
+            },
+            
+            // Check if a date is in the future
+            isFutureDate: function(year, month, day) {
+                const today = new Date();
+                const checkDate = new Date(year, month, day);
+                return checkDate > today;
+            },
+            
+            // Check if a date is in the past
+            isPastDate: function(year, month, day) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const checkDate = new Date(year, month, day);
+                checkDate.setHours(0, 0, 0, 0);
+                return checkDate < today;
+            },
+            
+            // Setup all event listeners
+            setupEventListeners: function() {
+                // Tab navigation
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        const tabId = e.currentTarget.getAttribute('data-tab');
+                        this.switchTab(tabId);
+                    });
+                });
+                
+                // Month navigation in planner
+                document.getElementById('prev-month').addEventListener('click', () => {
+                    this.currentMonth = (this.currentMonth - 1 + 12) % 12;
+                    this.currentPage = 1;
+                    this.renderPlanner();
+                    this.updatePageButtons();
+                });
+                
+                document.getElementById('next-month').addEventListener('click', () => {
+                    this.currentMonth = (this.currentMonth + 1) % 12;
+                    this.currentPage = 1;
+                    this.renderPlanner();
+                    this.updatePageButtons();
+                });
+                
+                // Page selection in planner
+                document.querySelectorAll('.page-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.currentPage = parseInt(e.currentTarget.getAttribute('data-page'));
+                        this.renderPlanner();
+                        this.updatePageButtons();
+                    });
+                });
+                
+                // Add task button
+                document.getElementById('add-task').addEventListener('click', () => {
+                    this.addTask();
+                });
+                
+                // Save progress buttons
+                document.getElementById('save-progress-btn').addEventListener('click', () => {
+                    this.saveProgress();
+                });
+                
+                document.getElementById('save-progress-bottom').addEventListener('click', () => {
+                    this.saveProgress();
+                });
+                
+                // Export data button
+                document.getElementById('export-data').addEventListener('click', () => {
+                    this.exportMonthToExcel();
+                });
+                
+                // History month selector
+                document.getElementById('history-month').addEventListener('change', (e) => {
+                    this.renderHistory();
+                });
+                
+                // History view selector
+                document.querySelectorAll('.view-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const view = e.currentTarget.getAttribute('data-view');
+                        this.switchHistoryView(view);
+                    });
+                });
+                
+                // Settings changes
+                document.getElementById('week-start').addEventListener('change', (e) => {
+                    this.settings.weekStart = parseInt(e.target.value);
+                    this.saveSettings();
+                    this.updateDashboard();
+                    this.showNotification('Week start setting updated', 'info');
+                });
+                
+                document.getElementById('default-view').addEventListener('change', (e) => {
+                    this.settings.defaultView = e.target.value;
+                    this.saveSettings();
+                    this.showNotification('Default view setting updated', 'info');
+                });
+                
+                document.getElementById('auto-save').addEventListener('change', (e) => {
+                    this.settings.autoSave = e.target.checked;
+                    this.saveSettings();
+                    const message = e.target.checked ? 'Auto-save enabled' : 'Auto-save disabled';
+                    this.showNotification(message, 'info');
+                });
+                
+                // Clear data button
+                document.getElementById('clear-data').addEventListener('click', () => {
+                    if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
+                        this.clearAllData();
+                    }
+                });
+                
+                // Export all data button
+                document.getElementById('export-all').addEventListener('click', () => {
+                    this.exportAllData();
+                });
+                
+                // Warn before leaving with unsaved changes
+                window.addEventListener('beforeunload', (e) => {
+                    if (this.unsavedChanges) {
+                        e.preventDefault();
+                        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                    }
+                });
+            },
+            
+            // Switch between tabs
+            switchTab: function(tabId) {
+                // Update active tab
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+                
+                // Update active content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(tabId).classList.add('active');
+                
+                // Update specific views when switching tabs
+                if (tabId === 'dashboard') {
+                    this.updateDashboard();
+                } else if (tabId === 'history') {
+                    this.renderHistory();
+                }
+            },
+            
+            // Show default view based on settings
+            showDefaultView: function() {
+                this.switchTab(this.settings.defaultView);
+            },
+            
+            // Update page buttons in planner
+            updatePageButtons: function() {
+                document.querySelectorAll('.page-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (parseInt(btn.getAttribute('data-page')) === this.currentPage) {
+                        btn.classList.add('active');
+                    }
+                });
+            },
+            
+            // Update save button states
+            updateSaveButtonStates: function() {
+                const saveButtons = document.querySelectorAll('#save-progress-btn, #save-progress-bottom');
+                
+                if (this.unsavedChanges) {
+                    saveButtons.forEach(btn => {
+                        btn.classList.add('unsaved-changes');
+                        btn.innerHTML = '<i class="fas fa-exclamation-circle"></i> Save Changes';
+                    });
+                } else {
+                    saveButtons.forEach(btn => {
+                        btn.classList.remove('unsaved-changes');
+                        btn.innerHTML = '<i class="fas fa-save"></i> Save Progress';
+                    });
+                }
+            },
+            
+            // Mark changes as unsaved
+            markChangesUnsaved: function() {
+                this.unsavedChanges = true;
+                this.updateSaveButtonStates();
+                
+                // Auto-save if enabled
+                if (this.settings.autoSave) {
+                    this.saveProgress();
+                }
+            },
+            
+            // Check for unsaved changes on load
+            checkUnsavedChanges: function() {
+                // Check if there are any unsaved changes in localStorage
+                const hasUnsavedChanges = localStorage.getItem('productivityDashboardHasUnsavedChanges');
+                if (hasUnsavedChanges === 'true') {
+                    this.unsavedChanges = true;
+                    this.updateSaveButtonStates();
+                    this.showNotification('You have unsaved changes from your last session', 'warning');
+                }
+            },
+            
+            // Render the planner table with day names in header
+            renderPlanner: function() {
+                const monthKey = `${this.currentMonth}-${this.currentYear}`;
+                const monthName = this.monthNames[this.currentMonth];
+                const year = this.currentYear;
+                const daysInMonth = this.getDaysInMonth(this.currentMonth + 1, year);
+                
+                // Update current month display
+                document.getElementById('current-month').textContent = `${monthName} ${year}`;
+                
+                // Get tasks for current month
+                const monthTasks = this.tasks[monthKey] || [];
+                
+                // Determine start and end days based on current page
+                let startDay, endDay;
+                if (this.currentPage === 1) {
+                    startDay = 1;
+                    endDay = Math.min(15, daysInMonth);
+                } else {
+                    startDay = 16;
+                    endDay = daysInMonth;
+                }
+                
+                // Clear table body
+                const tableBody = document.getElementById('table-body');
+                tableBody.innerHTML = '';
+                
+                // Clear and rebuild table header
+                const tableHeader = document.querySelector('.planner-table thead tr');
+                // Remove existing day cells
+                while (tableHeader.children.length > 2) {
+                    tableHeader.removeChild(tableHeader.lastChild);
+                }
+                
+                // Add day cells to header with day names
+                for (let day = startDay; day <= endDay; day++) {
+                    const th = document.createElement('th');
+                    const dayName = this.getDayName(year, this.currentMonth, day).substring(0, 3);
+                    
+                    // Create container for day number and name
+                    const dayContainer = document.createElement('div');
+                    dayContainer.style.display = 'flex';
+                    dayContainer.style.flexDirection = 'column';
+                    dayContainer.style.alignItems = 'center';
+                    dayContainer.style.justifyContent = 'center';
+                    dayContainer.style.gap = '2px';
+                    
+                    // Day number (larger)
+                    const dayNumber = document.createElement('div');
+                    dayNumber.textContent = day;
+                    dayNumber.style.fontWeight = '600';
+                    dayNumber.style.fontSize = '1rem';
+                    
+                    // Day name (smaller, below)
+                    const dayNameElement = document.createElement('div');
+                    dayNameElement.textContent = dayName;
+                    dayNameElement.style.fontSize = '0.75rem';
+                    dayNameElement.style.color = 'var(--gray-color)';
+                    dayNameElement.style.fontWeight = '500';
+                    
+                    dayContainer.appendChild(dayNumber);
+                    dayContainer.appendChild(dayNameElement);
+                    th.appendChild(dayContainer);
+                    
+                    th.title = `${dayName}, ${day}/${this.currentMonth + 1}/${year}`;
+                    tableHeader.appendChild(th);
+                }
+                
+                // Add delete column header
+                const deleteTh = document.createElement('th');
+                deleteTh.textContent = 'Delete';
+                tableHeader.appendChild(deleteTh);
+                
+                // Get today's date for highlighting
+                const today = new Date();
+                const isCurrentMonth = today.getFullYear() === year && today.getMonth() === this.currentMonth;
+                const todayDate = today.getDate();
+                
+                // Add task rows
+                if (monthTasks.length === 0) {
+                    // Show empty state
+                    const emptyRow = document.createElement('tr');
+                    const emptyCell = document.createElement('td');
+                    emptyCell.colSpan = endDay - startDay + 4; // +3 for task name, time, delete columns
+                    emptyCell.textContent = 'No tasks yet. Click "Add Task" to create your first task.';
+                    emptyCell.style.textAlign = 'center';
+                    emptyCell.style.padding = '30px';
+                    emptyCell.style.color = '#64748b';
+                    emptyRow.appendChild(emptyCell);
+                    tableBody.appendChild(emptyRow);
+                } else {
+                    monthTasks.forEach(task => {
+                        const row = document.createElement('tr');
+                        
+                        // Task name cell
+                        const nameCell = document.createElement('td');
+                        nameCell.className = 'task-name';
+                        const nameInput = document.createElement('input');
+                        nameInput.type = 'text';
+                        nameInput.value = task.name;
+                        nameInput.addEventListener('change', (e) => {
+                            task.name = e.target.value;
+                            this.markChangesUnsaved();
+                            this.updateDashboard();
+                        });
+                        nameCell.appendChild(nameInput);
+                        row.appendChild(nameCell);
+                        
+                        // Time cell
+                        const timeCell = document.createElement('td');
+                        timeCell.className = 'task-time';
+                        const timeInput = document.createElement('input');
+                        timeInput.type = 'text';
+                        timeInput.value = task.time;
+                        timeInput.addEventListener('change', (e) => {
+                            task.time = e.target.value;
+                            this.markChangesUnsaved();
+                        });
+                        timeCell.appendChild(timeInput);
+                        row.appendChild(timeCell);
+                        
+                        // Day cells
+                        for (let day = startDay; day <= endDay; day++) {
+                            const dayCell = document.createElement('td');
+                            dayCell.className = 'day-cell';
+                            dayCell.setAttribute('data-day', day);
+                            dayCell.setAttribute('data-task-id', task.id);
+                            
+                            // Get status (default to empty)
+                            const status = task.status && task.status[day] ? task.status[day] : 'empty';
+                            dayCell.classList.add(status);
+                            
+                            // Add class for past/future days
+                            if (this.isFutureDate(year, this.currentMonth, day)) {
+                                dayCell.classList.add('future-day');
+                            } else if (this.isPastDate(year, this.currentMonth, day)) {
+                                dayCell.classList.add('past-day');
+                            }
+                            
+                            // Set cell content based on status
+                            if (status === 'done') {
+                                dayCell.textContent = '✓';
+                                dayCell.title = 'Task completed';
+                            } else if (status === 'not-done') {
+                                dayCell.textContent = '✗';
+                                dayCell.title = 'Task not completed';
+                            } else {
+                                dayCell.textContent = '○';
+                                dayCell.title = 'Task status not set';
+                            }
+                            
+                            // Add today highlight
+                            if (isCurrentMonth && day === todayDate) {
+                                dayCell.classList.add('today');
+                                dayCell.title += ' (Today)';
+                            }
+                            
+                            // Add tooltip with full date and day name
+                            const tooltip = document.createElement('div');
+                            tooltip.className = 'tooltip';
+                            const fullDayName = this.getDayName(year, this.currentMonth, day);
+                            tooltip.textContent = `${fullDayName}, ${day.toString().padStart(2, '0')}/${(this.currentMonth + 1).toString().padStart(2, '0')}/${year}`;
+                            dayCell.appendChild(tooltip);
+                            
+                            // Add click event to toggle status
+                            dayCell.addEventListener('click', (e) => {
+                                this.cycleTaskStatus(task.id, day);
+                                this.renderPlanner();
+                                this.updateDashboard();
+                            });
+                            
+                            row.appendChild(dayCell);
+                        }
+                        
+                        // Delete button cell
+                        const deleteCell = document.createElement('td');
+                        const deleteButton = document.createElement('button');
+                        deleteButton.className = 'delete-task';
+                        deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
+                        deleteButton.addEventListener('click', () => {
+                            if (confirm('Are you sure you want to delete this task?')) {
+                                this.deleteTask(task.id);
+                                this.renderPlanner();
+                                this.updateDashboard();
+                            }
+                        });
+                        deleteCell.appendChild(deleteButton);
+                        row.appendChild(deleteCell);
+                        
+                        tableBody.appendChild(row);
+                    });
+                }
+            },
+            
+            // Cycle through task statuses: empty → done → not-done → empty
+            cycleTaskStatus: function(taskId, day) {
+                const monthKey = `${this.currentMonth}-${this.currentYear}`;
+                const task = this.tasks[monthKey]?.find(t => t.id === taskId);
+                
+                if (task) {
+                    if (!task.status) task.status = {};
+                    
+                    // Cycle through statuses
+                    const currentStatus = task.status[day] || 'empty';
+                    let newStatus;
+                    
+                    if (currentStatus === 'empty') {
+                        newStatus = 'done';
+                    } else if (currentStatus === 'done') {
+                        newStatus = 'not-done';
+                    } else {
+                        newStatus = 'empty'; // Reset to empty
+                    }
+                    
+                    task.status[day] = newStatus;
+                    this.markChangesUnsaved();
+                    
+                    // Show status change notification
+                    const statusMessages = {
+                        'empty': 'Status cleared',
+                        'done': 'Marked as done',
+                        'not-done': 'Marked as not done'
+                    };
+                    
+                    this.showNotification(`Task status updated: ${statusMessages[newStatus]}`, 'info');
+                }
+            },
+            
+            // Add a new task
+            addTask: function() {
+                const monthKey = `${this.currentMonth}-${this.currentYear}`;
+                
+                if (!this.tasks[monthKey]) {
+                    this.tasks[monthKey] = [];
+                }
+                
+                const daysInMonth = this.getDaysInMonth(this.currentMonth + 1, this.currentYear);
+                const newTask = {
+                    id: this.generateId(),
+                    name: 'New Task',
+                    time: '09:00',
+                    status: {}
+                };
+                
+                // Initialize all days as empty (not set)
+                for (let day = 1; day <= daysInMonth; day++) {
+                    newTask.status[day] = 'empty';
+                }
+                
+                this.tasks[monthKey].push(newTask);
+                this.markChangesUnsaved();
+                this.renderPlanner();
+                this.showNotification('New task added successfully', 'success');
+            },
+            
+            // Save progress manually
+            saveProgress: function() {
+                this.saveTasks();
+                this.showNotification('Progress saved successfully!', 'success');
+            },
+            
+            // Delete a task
+            deleteTask: function(taskId) {
+                const monthKey = `${this.currentMonth}-${this.currentYear}`;
+                if (this.tasks[monthKey]) {
+                    this.tasks[monthKey] = this.tasks[monthKey].filter(task => task.id !== taskId);
+                    this.markChangesUnsaved();
+                    this.showNotification('Task deleted successfully', 'info');
+                }
+            },
+            
+            // Update dashboard with current data
+            updateDashboard: function() {
+                // Update current date
+                const now = new Date();
+                const currentDateStr = now.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                const currentWeekday = now.toLocaleDateString('en-US', { weekday: 'long' });
+                
+                document.getElementById('current-date').textContent = currentDateStr;
+                document.getElementById('current-weekday').textContent = currentWeekday;
+                
+                // Get current month, day, and year
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+                const currentDay = now.getDate();
+                
+                // Get tasks for current month
+                const monthKey = `${currentMonth}-${currentYear}`;
+                const monthTasks = this.tasks[monthKey] || [];
+                const daysInMonth = this.getDaysInMonth(currentMonth + 1, currentYear);
+                
+                // Calculate daily progress (only count tasks with status set)
+                let dailyDone = 0;
+                let dailyTotal = 0;
+                
+                monthTasks.forEach(task => {
+                    if (task.status && task.status[currentDay] && task.status[currentDay] !== 'empty') {
+                        dailyTotal++;
+                        if (task.status[currentDay] === 'done') {
+                            dailyDone++;
+                        }
+                    }
+                });
+                
+                const dailyPercentage = dailyTotal > 0 ? Math.round((dailyDone / dailyTotal) * 100) : 0;
+                document.getElementById('daily-count').textContent = `${dailyDone}/${dailyTotal}`;
+                document.getElementById('daily-progress').style.width = `${dailyPercentage}%`;
+                document.getElementById('daily-percentage').textContent = `${dailyPercentage}%`;
+                
+                // Calculate weekly progress
+                const weekStart = this.settings.weekStart; // 0 = Sunday, 1 = Monday
+                const { startDate, endDate } = this.getWeekRange(now, weekStart);
+                
+                let weeklyDone = 0;
+                let weeklyTotal = 0;
+                
+                // Count tasks for each day of the week
+                for (let day = startDate.getDate(); day <= endDate.getDate(); day++) {
+                    // Make sure we're still in the same month
+                    if (day > daysInMonth) break;
+                    
+                    monthTasks.forEach(task => {
+                        if (task.status && task.status[day] && task.status[day] !== 'empty') {
+                            weeklyTotal++;
+                            if (task.status[day] === 'done') {
+                                weeklyDone++;
+                            }
+                        }
+                    });
+                }
+                
+                const weeklyPercentage = weeklyTotal > 0 ? Math.round((weeklyDone / weeklyTotal) * 100) : 0;
+                document.getElementById('weekly-count').textContent = `${weeklyDone}/${weeklyTotal}`;
+                document.getElementById('weekly-progress').style.width = `${weeklyPercentage}%`;
+                document.getElementById('weekly-percentage').textContent = `${weeklyPercentage}%`;
+                
+                // Update week range display
+                const startStr = startDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+                const endStr = endDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+                document.getElementById('week-range').textContent = `${startStr} → ${endStr}`;
+                
+                // Calculate monthly progress
+                let monthlyDone = 0;
+                let monthlyTotal = 0;
+                
+                for (let day = 1; day <= daysInMonth; day++) {
+                    monthTasks.forEach(task => {
+                        if (task.status && task.status[day] && task.status[day] !== 'empty') {
+                            monthlyTotal++;
+                            if (task.status[day] === 'done') {
+                                monthlyDone++;
+                            }
+                        }
+                    });
+                }
+                
+                const monthlyPercentage = monthlyTotal > 0 ? Math.round((monthlyDone / monthlyTotal) * 100) : 0;
+                document.getElementById('monthly-count').textContent = `${monthlyDone}/${monthlyTotal}`;
+                document.getElementById('monthly-progress').style.width = `${monthlyPercentage}%`;
+                document.getElementById('monthly-percentage').textContent = `${monthlyPercentage}%`;
+                
+                // Update month summary
+                document.getElementById('month-total').textContent = monthlyDone;
+                document.getElementById('month-avg').textContent = `${monthlyPercentage}%`;
+            },
+            
+            // Get week range based on week start setting
+            getWeekRange: function(date, weekStart) {
+                const currentDay = date.getDay();
+                const diff = (currentDay < weekStart ? 7 : 0) + currentDay - weekStart;
+                
+                const startDate = new Date(date);
+                startDate.setDate(date.getDate() - diff);
+                startDate.setHours(0, 0, 0, 0);
+                
+                const endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 6);
+                endDate.setHours(23, 59, 59, 999);
+                
+                return { startDate, endDate };
+            },
+            
+            // Render history view
+            renderHistory: function() {
+                const selectedMonth = parseInt(document.getElementById('history-month').value);
+                const activeView = document.querySelector('.view-btn.active').getAttribute('data-view');
+                
+                this.renderHistoryContent(selectedMonth, activeView);
+            },
+            
+            // Render history month options
+            renderHistoryMonthOptions: function() {
+                const select = document.getElementById('history-month');
+                select.innerHTML = '';
+                
+                // Default to current month
+                const currentMonth = new Date().getMonth();
+                
+                for (let i = 0; i < 12; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = this.monthNames[i] + ' 2026';
+                    option.selected = i === currentMonth;
+                    select.appendChild(option);
+                }
+            },
+            
+            // Switch history view
+            switchHistoryView: function(view) {
+                // Update active view button
+                document.querySelectorAll('.view-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.getAttribute('data-view') === view) {
+                        btn.classList.add('active');
+                    }
+                });
+                
+                // Render history with new view
+                const selectedMonth = parseInt(document.getElementById('history-month').value);
+                this.renderHistoryContent(selectedMonth, view);
+            },
+            
+            // Render history content
+            renderHistoryContent: function(month, view) {
+                const monthKey = `${month}-2026`;
+                const monthTasks = this.tasks[monthKey] || [];
+                const daysInMonth = this.getDaysInMonth(month + 1, 2026);
+                const container = document.getElementById('history-container');
+                
+                if (view === 'daily') {
+                    this.renderDailyHistory(container, month, monthTasks, daysInMonth);
+                } else if (view === 'weekly') {
+                    this.renderWeeklyHistory(container, month, monthTasks, daysInMonth);
+                } else if (view === 'monthly') {
+                    this.renderMonthlySummary(container, month, monthTasks, daysInMonth);
+                }
+            },
+            
+            // Render daily history view with day names on the right side
+            renderDailyHistory: function(container, month, monthTasks, daysInMonth) {
+                container.innerHTML = '<h3>Daily Task History</h3>';
+                
+                if (monthTasks.length === 0) {
+                    container.innerHTML += '<p>No tasks found for this month.</p>';
+                    return;
+                }
+                
+                const dailyContainer = document.createElement('div');
+                dailyContainer.className = 'daily-history';
+                
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayCard = document.createElement('div');
+                    dayCard.className = 'history-day';
+                    
+                    const dayHeader = document.createElement('div');
+                    dayHeader.className = 'history-day-header';
+                    
+                    // Create a flex container for date and weekday
+                    const dateContainer = document.createElement('div');
+                    dateContainer.className = 'history-date-container';
+                    
+                    const dateElement = document.createElement('div');
+                    dateElement.className = 'history-date';
+                    dateElement.textContent = `${this.monthNames[month]} ${day}, 2026`;
+                    
+                    const weekdayElement = document.createElement('div');
+                    weekdayElement.className = 'history-weekday';
+                    const dayName = this.getDayName(2026, month, day);
+                    weekdayElement.textContent = dayName;
+                    
+                    dateContainer.appendChild(dateElement);
+                    dateContainer.appendChild(weekdayElement);
+                    dayHeader.appendChild(dateContainer);
+                    
+                    const dayContent = document.createElement('div');
+                    dayContent.className = 'history-day-content';
+                    
+                    // Count tasks for this day
+                    let dayDone = 0;
+                    let dayTotal = 0;
+                    
+                    monthTasks.forEach(task => {
+                        if (task.status && task.status[day] && task.status[day] !== 'empty') {
+                            dayTotal++;
+                            if (task.status[day] === 'done') {
+                                dayDone++;
+                            }
+                            
+                            // Add task to display
+                            const taskElement = document.createElement('div');
+                            taskElement.className = 'history-task';
+                            
+                            const taskName = document.createElement('div');
+                            taskName.className = 'history-task-name';
+                            taskName.textContent = task.name;
+                            
+                            const taskTime = document.createElement('div');
+                            taskTime.className = 'history-task-time';
+                            taskTime.textContent = task.time;
+                            
+                            const taskStatus = document.createElement('div');
+                            const statusClass = task.status[day] === 'done' ? 'status-done' : 'status-not-done';
+                            taskStatus.className = `history-task-status ${statusClass}`;
+                            taskStatus.textContent = task.status[day] === 'done' ? 'Done' : 'Not Done';
+                            
+                            taskElement.appendChild(taskName);
+                            taskElement.appendChild(taskTime);
+                            taskElement.appendChild(taskStatus);
+                            dayContent.appendChild(taskElement);
+                        } else if (task.status && task.status[day] === 'empty') {
+                            // Show empty status tasks too
+                            const taskElement = document.createElement('div');
+                            taskElement.className = 'history-task';
+                            
+                            const taskName = document.createElement('div');
+                            taskName.className = 'history-task-name';
+                            taskName.textContent = task.name;
+                            taskName.style.opacity = '0.6';
+                            
+                            const taskTime = document.createElement('div');
+                            taskTime.className = 'history-task-time';
+                            taskTime.textContent = task.time;
+                            taskTime.style.opacity = '0.6';
+                            
+                            const taskStatus = document.createElement('div');
+                            taskStatus.className = 'history-task-status status-empty';
+                            taskStatus.textContent = 'Not Set';
+                            
+                            taskElement.appendChild(taskName);
+                            taskElement.appendChild(taskTime);
+                            taskElement.appendChild(taskStatus);
+                            dayContent.appendChild(taskElement);
+                        }
+                    });
+                    
+                    // If no tasks for this day
+                    if (dayTotal === 0 && monthTasks.length > 0) {
+                        const allEmpty = monthTasks.every(task => 
+                            !task.status || !task.status[day] || task.status[day] === 'empty'
+                        );
+                        
+                        if (allEmpty) {
+                            const noTasks = document.createElement('p');
+                            noTasks.textContent = 'No tasks tracked for this day';
+                            noTasks.style.color = '#64748b';
+                            noTasks.style.fontStyle = 'italic';
+                            noTasks.style.textAlign = 'center';
+                            noTasks.style.padding = '10px';
+                            dayContent.appendChild(noTasks);
+                        }
+                    } else if (dayTotal > 0) {
+                        // Add day summary
+                        const daySummary = document.createElement('div');
+                        daySummary.className = 'history-task';
+                        daySummary.style.borderTop = '2px solid #e2e8f0';
+                        daySummary.style.marginTop = '10px';
+                        daySummary.style.paddingTop = '10px';
+                        daySummary.style.fontWeight = '600';
+                        
+                        const summaryText = document.createElement('div');
+                        summaryText.textContent = 'Day Summary:';
+                        
+                        const summaryStatus = document.createElement('div');
+                        summaryStatus.textContent = `${dayDone}/${dayTotal} tasks completed`;
+                        summaryStatus.style.color = dayDone === dayTotal ? 'var(--success-color)' : 'var(--danger-color)';
+                        
+                        daySummary.appendChild(summaryText);
+                        daySummary.appendChild(summaryStatus);
+                        dayContent.appendChild(daySummary);
+                    }
+                    
+                    dayCard.appendChild(dayHeader);
+                    dayCard.appendChild(dayContent);
+                    dailyContainer.appendChild(dayCard);
+                }
+                
+                container.appendChild(dailyContainer);
+            },
+            
+            // Render weekly history view
+            renderWeeklyHistory: function(container, month, monthTasks, daysInMonth) {
+                container.innerHTML = '<h3>Weekly Task History</h3>';
+                
+                if (monthTasks.length === 0) {
+                    container.innerHTML += '<p>No tasks found for this month.</p>';
+                    return;
+                }
+                
+                // Group days by week
+                const weeks = [];
+                let currentWeek = [];
+                
+                for (let day = 1; day <= daysInMonth; day++) {
+                    currentWeek.push(day);
+                    
+                    // Check if this is the end of a week (Saturday if week starts on Sunday)
+                    const date = new Date(2026, month, day);
+                    const dayOfWeek = date.getDay();
+                    const weekEndDay = this.settings.weekStart === 0 ? 6 : 5; // Saturday if Sunday start, Friday if Monday start
+                    
+                    if (dayOfWeek === weekEndDay || day === daysInMonth) {
+                        weeks.push([...currentWeek]);
+                        currentWeek = [];
+                    }
+                }
+                
+                // Display each week
+                weeks.forEach((weekDays, weekIndex) => {
+                    const weekCard = document.createElement('div');
+                    weekCard.className = 'card';
+                    weekCard.style.marginBottom = '20px';
+                    
+                    // Get start and end dates for the week
+                    const startDate = new Date(2026, month, weekDays[0]);
+                    const endDate = new Date(2026, month, weekDays[weekDays.length - 1]);
+                    const startDayName = this.getDayName(2026, month, weekDays[0]);
+                    const endDayName = this.getDayName(2026, month, weekDays[weekDays.length - 1]);
+                    
+                    const weekHeader = document.createElement('h3');
+                    weekHeader.textContent = `Week ${weekIndex + 1}: ${this.monthNames[month]} ${weekDays[0]} (${startDayName.substring(0, 3)}) - ${weekDays[weekDays.length - 1]} (${endDayName.substring(0, 3)}), 2026`;
+                    weekCard.appendChild(weekHeader);
+                    
+                    // Calculate week stats (only count tasks with status set)
+                    let weekDone = 0;
+                    let weekTotal = 0;
+                    
+                    weekDays.forEach(day => {
+                        monthTasks.forEach(task => {
+                            if (task.status && task.status[day] && task.status[day] !== 'empty') {
+                                weekTotal++;
+                                if (task.status[day] === 'done') {
+                                    weekDone++;
+                                }
+                            }
+                        });
+                    });
+                    
+                    const weekPercentage = weekTotal > 0 ? Math.round((weekDone / weekTotal) * 100) : 0;
+                    
+                    // Add progress bar
+                    const progressContainer = document.createElement('div');
+                    progressContainer.className = 'progress-container';
+                    
+                    const progressLabel = document.createElement('div');
+                    progressLabel.className = 'progress-label';
+                    progressLabel.innerHTML = `<span>Week ${weekIndex + 1} Completion</span><span>${weekDone}/${weekTotal}</span>`;
+                    
+                    const progressBar = document.createElement('div');
+                    progressBar.className = 'progress-bar';
+                    
+                    const progressFill = document.createElement('div');
+                    progressFill.className = 'progress-fill';
+                    progressFill.style.width = `${weekPercentage}%`;
+                    progressFill.style.backgroundColor = weekPercentage >= 80 ? 'var(--success-color)' : 
+                                                         weekPercentage >= 50 ? 'var(--warning-color)' : 
+                                                         'var(--danger-color)';
+                    
+                    progressBar.appendChild(progressFill);
+                    progressContainer.appendChild(progressLabel);
+                    progressContainer.appendChild(progressBar);
+                    weekCard.appendChild(progressContainer);
+                    
+                    // Add day-by-day breakdown with day names
+                    const dayBreakdown = document.createElement('div');
+                    dayBreakdown.style.marginTop = '15px';
+                    dayBreakdown.style.fontSize = '0.9rem';
+                    
+                    weekDays.forEach(day => {
+                        let dayDone = 0;
+                        let dayTotal = 0;
+                        
+                        monthTasks.forEach(task => {
+                            if (task.status && task.status[day] && task.status[day] !== 'empty') {
+                                dayTotal++;
+                                if (task.status[day] === 'done') {
+                                    dayDone++;
+                                }
+                            }
+                        });
+                        
+                        const dayElement = document.createElement('div');
+                        dayElement.style.display = 'flex';
+                        dayElement.style.justifyContent = 'space-between';
+                        dayElement.style.marginBottom = '5px';
+                        dayElement.style.padding = '5px';
+                        dayElement.style.backgroundColor = dayTotal === 0 ? '#f1f5f9' : 
+                                                           dayDone === dayTotal ? 'rgba(22, 163, 74, 0.1)' : 
+                                                           dayDone > 0 ? 'rgba(245, 158, 11, 0.1)' : 
+                                                           'rgba(220, 38, 38, 0.1)';
+                        dayElement.style.borderRadius = '4px';
+                        
+                        const dayLabel = document.createElement('span');
+                        const dayName = this.getDayName(2026, month, day);
+                        dayLabel.textContent = `${dayName.substring(0, 3)} ${day}:`;
+                        
+                        const dayStats = document.createElement('span');
+                        dayStats.textContent = dayTotal === 0 ? 'No tasks set' : `${dayDone}/${dayTotal} completed`;
+                        dayStats.style.color = dayTotal === 0 ? 'var(--gray-color)' : 
+                                               dayDone === dayTotal ? 'var(--success-color)' : 
+                                               dayDone > 0 ? 'var(--warning-color)' : 
+                                               'var(--danger-color)';
+                        
+                        dayElement.appendChild(dayLabel);
+                        dayElement.appendChild(dayStats);
+                        dayBreakdown.appendChild(dayElement);
+                    });
+                    
+                    weekCard.appendChild(dayBreakdown);
+                    container.appendChild(weekCard);
+                });
+            },
+            
+            // Render monthly summary
+            renderMonthlySummary: function(container, month, monthTasks, daysInMonth) {
+                container.innerHTML = '<h3>Monthly Summary</h3>';
+                
+                if (monthTasks.length === 0) {
+                    container.innerHTML += '<p>No tasks found for this month.</p>';
+                    return;
+                }
+                
+                // Calculate monthly stats (only count tasks with status set)
+                let monthlyDone = 0;
+                let monthlyTotal = 0;
+                
+                for (let day = 1; day <= daysInMonth; day++) {
+                    monthTasks.forEach(task => {
+                        if (task.status && task.status[day] && task.status[day] !== 'empty') {
+                            monthlyTotal++;
+                            if (task.status[day] === 'done') {
+                                monthlyDone++;
+                            }
+                        }
+                    });
+                }
+                
+                const monthlyPercentage = monthlyTotal > 0 ? Math.round((monthlyDone / monthlyTotal) * 100) : 0;
+                
+                // Create summary card
+                const summaryCard = document.createElement('div');
+                summaryCard.className = 'card';
+                
+                const summaryHeader = document.createElement('h3');
+                summaryHeader.textContent = `${this.monthNames[month]} 2026 Summary`;
+                summaryCard.appendChild(summaryHeader);
+                
+                // Add monthly stats
+                const statsGrid = document.createElement('div');
+                statsGrid.style.display = 'grid';
+                statsGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
+                statsGrid.style.gap = '15px';
+                statsGrid.style.marginTop = '15px';
+                
+                const stats = [
+                    { label: 'Total Tasks Completed', value: monthlyDone, color: 'var(--success-color)' },
+                    { label: 'Total Tasks Tracked', value: monthlyTotal, color: 'var(--primary-color)' },
+                    { label: 'Completion Rate', value: `${monthlyPercentage}%`, color: monthlyPercentage >= 80 ? 'var(--success-color)' : monthlyPercentage >= 50 ? 'var(--warning-color)' : 'var(--danger-color)' },
+                    { label: 'Days in Month', value: daysInMonth, color: 'var(--secondary-color)' }
+                ];
+                
+                stats.forEach(stat => {
+                    const statElement = document.createElement('div');
+                    statElement.style.padding = '15px';
+                    statElement.style.backgroundColor = '#f8fafc';
+                    statElement.style.borderRadius = 'var(--border-radius)';
+                    statElement.style.textAlign = 'center';
+                    
+                    const statValue = document.createElement('div');
+                    statValue.textContent = stat.value;
+                    statValue.style.fontSize = '1.8rem';
+                    statValue.style.fontWeight = '700';
+                    statValue.style.color = stat.color;
+                    statValue.style.marginBottom = '5px';
+                    
+                    const statLabel = document.createElement('div');
+                    statLabel.textContent = stat.label;
+                    statLabel.style.color = 'var(--gray-color)';
+                    statLabel.style.fontSize = '0.9rem';
+                    
+                    statElement.appendChild(statValue);
+                    statElement.appendChild(statLabel);
+                    statsGrid.appendChild(statElement);
+                });
+                
+                summaryCard.appendChild(statsGrid);
+                
+                // Add task breakdown
+                const taskBreakdown = document.createElement('div');
+                taskBreakdown.style.marginTop = '20px';
+                
+                const breakdownHeader = document.createElement('h4');
+                breakdownHeader.textContent = 'Task Breakdown';
+                breakdownHeader.style.marginBottom = '10px';
+                
+                taskBreakdown.appendChild(breakdownHeader);
+                
+                monthTasks.forEach(task => {
+                    let taskDone = 0;
+                    let taskTotal = 0;
+                    
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        if (task.status && task.status[day] && task.status[day] !== 'empty') {
+                            taskTotal++;
+                            if (task.status[day] === 'done') {
+                                taskDone++;
+                            }
+                        }
+                    }
+                    
+                    const taskElement = document.createElement('div');
+                    taskElement.style.display = 'flex';
+                    taskElement.style.justifyContent = 'space-between';
+                    taskElement.style.alignItems = 'center';
+                    taskElement.style.marginBottom = '10px';
+                    taskElement.style.padding = '10px';
+                    taskElement.style.backgroundColor = '#f8fafc';
+                    taskElement.style.borderRadius = 'var(--border-radius)';
+                    
+                    const taskInfo = document.createElement('div');
+                    taskInfo.innerHTML = `<strong>${task.name}</strong> (${task.time})`;
+                    
+                    const taskStats = document.createElement('div');
+                    taskStats.textContent = taskTotal === 0 ? 'Not tracked' : `${taskDone}/${taskTotal} days`;
+                    taskStats.style.color = taskTotal === 0 ? 'var(--gray-color)' : 
+                                            taskDone === taskTotal ? 'var(--success-color)' : 
+                                            taskDone > taskTotal / 2 ? 'var(--warning-color)' : 
+                                            'var(--danger-color)';
+                    taskStats.style.fontWeight = '600';
+                    
+                    taskElement.appendChild(taskInfo);
+                    taskElement.appendChild(taskStats);
+                    taskBreakdown.appendChild(taskElement);
+                });
+                
+                summaryCard.appendChild(taskBreakdown);
+                container.appendChild(summaryCard);
+            },
+            
+            // Export current month data to Excel
+            exportMonthToExcel: function() {
+                const monthKey = `${this.currentMonth}-2026`;
+                const monthTasks = this.tasks[monthKey] || [];
+                const daysInMonth = this.getDaysInMonth(this.currentMonth + 1, 2026);
+                
+                if (monthTasks.length === 0) {
+                    this.showNotification('No data to export for this month', 'error');
+                    return;
+                }
+                
+                // Prepare data for export
+                const exportData = [];
+                
+                // Add header row
+                exportData.push(['Date', 'Day', 'Task Name', 'Time', 'Status']);
+                
+                // Add data rows (only include tasks with status set)
+                for (let day = 1; day <= daysInMonth; day++) {
+                    monthTasks.forEach(task => {
+                        if (task.status && task.status[day] && task.status[day] !== 'empty') {
+                            const dateStr = `${day.toString().padStart(2, '0')}/${(this.currentMonth + 1).toString().padStart(2, '0')}/2026`;
+                            const dayName = this.getDayName(2026, this.currentMonth, day);
+                            const status = task.status[day] === 'done' ? 'Done' : 'Not Done';
+                            
+                            exportData.push([dateStr, dayName, task.name, task.time, status]);
+                        }
+                    });
+                }
+                
+                // Create worksheet
+                const ws = XLSX.utils.aoa_to_sheet(exportData);
+                
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, `${this.monthNames[this.currentMonth]} 2026`);
+                
+                // Generate file and trigger download
+                const fileName = `Productivity_Dashboard_${this.monthNames[this.currentMonth]}_2026.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                
+                this.showNotification(`Data exported to ${fileName}`, 'success');
+            },
+            
+            // Export all data as JSON
+            exportAllData: function() {
+                const dataStr = JSON.stringify(this.tasks, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                
+                const exportFileDefaultName = `Productivity_Dashboard_All_Data_2026.json`;
+                
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+                
+                this.showNotification('All data exported as JSON', 'success');
+            },
+            
+            // Clear all data
+            clearAllData: function() {
+                localStorage.removeItem('productivityDashboardTasks2026');
+                localStorage.removeItem('productivityDashboardSettings');
+                localStorage.removeItem('productivityDashboardLastSaved');
+                localStorage.removeItem('productivityDashboardHasUnsavedChanges');
+                
+                // Reset to default state
+                this.tasks = {};
+                this.settings = {
+                    weekStart: 0,
+                    defaultView: 'dashboard',
+                    autoSave: false
+                };
+                this.lastSavedTime = null;
+                this.unsavedChanges = false;
+                
+                // Reinitialize sample data
+                this.initializeSampleData();
+                
+                // Update UI
+                document.getElementById('week-start').value = this.settings.weekStart;
+                document.getElementById('default-view').value = this.settings.defaultView;
+                document.getElementById('auto-save').checked = false;
+                
+                this.updateLastSavedDisplay();
+                this.updateSaveButtonStates();
+                this.renderPlanner();
+                this.updateDashboard();
+                this.renderHistory();
+                
+                this.showNotification('All data cleared successfully', 'info');
+            },
+            
+            // Show notification
+            showNotification: function(message, type) {
+                const notification = document.getElementById('notification');
+                const notificationText = document.getElementById('notification-text');
+                
+                notificationText.textContent = message;
+                notification.className = `notification ${type}`;
+                notification.classList.add('show');
+                
+                // Update icon based on type
+                const icon = notification.querySelector('i');
+                if (type === 'success') {
+                    icon.className = 'fas fa-check-circle';
+                } else if (type === 'error') {
+                    icon.className = 'fas fa-exclamation-circle';
+                } else if (type === 'warning') {
+                    icon.className = 'fas fa-exclamation-triangle';
+                } else {
+                    icon.className = 'fas fa-info-circle';
+                }
+                
+                // Hide notification after 3 seconds
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+        };
+
+        // Initialize the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            ProductivityDashboard.init();
+        });
+    </script>
+
+    <script>
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(registration => {
+        console.log('Service Worker registered with scope:', registration.scope);
+      })
+      .catch(error => {
+        console.log('Service Worker registration failed:', error);
+      });
+  });
+}
+
+// PWA Install Prompt
+let deferredPrompt;
+const installButton = document.createElement('button');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevent Chrome 67 and earlier from automatically showing the prompt
+  e.preventDefault();
+  // Stash the event so it can be triggered later
+  deferredPrompt = e;
+  
+  // Create and show install button (optional)
+  installButton.innerHTML = '📱 Install App';
+  installButton.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 1000;
+  `;
+  installButton.onclick = installApp;
+  document.body.appendChild(installButton);
+});
+
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted install');
+        installButton.style.display = 'none';
+      }
+      deferredPrompt = null;
+    });
+  }
+}
+</script>
+</body>
+</html>
