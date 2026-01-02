@@ -80,4 +80,28 @@ git clone https://github.com/199221007009/ProgressGrid2026.git
 cd ProgressGrid2026
 npx serve .
 
+_________________________________________________________________________________________________
 
+Quick Guide to run this tool:
+
+"Hey, to run CSK 2026 locally:
+
+    Download: Go to https://github.com/199221007009/ProgressGrid2026 → Code → Download ZIP
+
+    Extract: Right-click ZIP → Extract All
+
+    Install Node.js from https://nodejs.org (LTS version)
+
+    Open Command Prompt in the folder:
+
+        Open folder, click address bar, type cmd, press Enter
+
+    Run: Type node server.js
+
+    Open: Go to http://localhost:3000 in Chrome
+
+    Install: Click install icon in address bar
+
+Done! The app will work offline on your PC."
+
+_________________________________________________________________________________________________
